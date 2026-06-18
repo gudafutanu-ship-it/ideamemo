@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="アイデア" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="description" content="アイデアを保存し、HTML化できるか判定するiPhone用メモアプリ" />
+
+  <!-- iPhone / PWA 用アイコン設定 -->
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="icon-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
+  <link rel="manifest" href="manifest.json" />
+
+  <title>アイデアメモ</title>
+  <style>
+    :root{
+      --bg:#0f172a;
+      --card:#111827;
+      --card2:#1f2937;
+      --text:#f9fafb;
+      --muted:#9ca3af;
+      --line:#374151;
+      --accent:#38bdf8;
+      --danger:#fb7185;
+      --ok:#34d399;
+      --warn:#fbbf24;
+      --radius:18px;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,"Hiragino Sans",Meiryo,sans-serif;
+      background:linear-gradient(180deg,#020617 0%,#111827 100%);
+      color:var(--text);
+      min-height:100vh;
+      padding:env(safe-area-inset-top) 14px calc(env(safe-area-inset-bottom) + 18px);
+    }
+    header{
+      position:sticky;
+      top:0;
+      z-index:5;
+      padding:14px 0 10px;
+      background:linear-gradient(180deg,rgba(2,6,23,.96),rgba(2,6,23,.75));
+      backdrop-filter:blur(12px);
+    }
+    h1{font-size:24px;margin:0 0 10px;font-weight:800;letter-spacing:.03em;}
+    .topbar{display:flex;gap:8px;align-items:center;}
+    input,textarea,select,button{
+      font:inherit;
+      border:none;
+      border-radius:14px;
+    }
+    .search{
+      flex:1;
+      padding:13px 14px;
+      background:#020617;
+      color:var(--text);
+      border:1px solid var(--line);
+      outline:none;
+    }
+    button{
+      background:var(--accent);
+      color:#00111a;
+      font-weight:800;
+      padding:12px 14px;
+      cursor:pointer;
+      box-shadow:0 8px 20px rgba(56,189,248,.18);
+    }
+    button:active{transform:scale(.98);}
+    .ghost{background:#1f2937;color:var(--text);box-shadow:none;border:1px solid var(--line);}
+    .danger{background:var(--danger);color:white;}
+    .ok{background:var(--ok);color:#052e1b;}
+    .warn{background:var(--warn);color:#2b1700;}
+    .panel{
+      margin:12px 0;
+      background:rgba(17,24,39,.9);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:12px;
+      box-shadow:0 10px 30px rgba(0,0,0,.25);
+    }
+    textarea{
+      width:100%;
+      min-height:112px;
+      resize:vertical;
+      padding:14px;
+      background:#020617;
+      color:var(--text);
+      border:1px solid var(--line);
+      outline:none;
+      line-height:1.55;
+    }
+    .row{display:flex;gap:8px;align-items:center;margin-top:8px;}
+    select,input.small{
+      min-width:0;
+      padding:12px;
+      background:#020617;
+      color:var(--text);
+      border:1px solid var(--line);
+      outline:none;
+    }
+    select{flex:1;}
+    .small{width:42%;}
+    .chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 2px;margin:8px 0 2px;}
+    .chip{
+      white-space:nowrap;
+      padding:8px 12px;
+      background:#020617;
+      color:var(--muted);
+      border:1px solid var(--line);
+      border-radius:999px;
+      font-size:14px;
+    }
+    .chip.active{background:rgba(56,189,248,.18);color:#e0f2fe;border-color:var(--accent);}
+    .idea{
+      background:rgba(31,41,55,.9);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:13px;
+      margin:10px 0;
+    }
+    .idea.pinned{border-color:var(--warn);box-shadow:0 0 0 1px rgba(251,191,36,.18) inset;}
+    .meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px;margin-bottom:8px;}
+    .tag{color:#bae6fd;}
+    .ideaText{white-space:pre-wrap;line-height:1.55;font-size:16px;}
+    .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+    .actions button{font-size:13px;padding:9px 10px;border-radius:12px;}
+    .judgeBox{margin-top:10px;padding:11px;border-radius:14px;background:#020617;border:1px solid var(--line);line-height:1.55;font-size:14px;}
+    .judgeBox strong{color:#e0f2fe;}
+    .score{font-size:18px;font-weight:800;color:var(--ok);}
+    .empty{text-align:center;color:var(--muted);padding:30px 12px;line-height:1.7;}
+    .stats{color:var(--muted);font-size:13px;margin:8px 2px;}
+    .modal{
+      position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.62);
+      display:none;align-items:flex-end;padding:14px;
+    }
+    .modal.show{display:flex;}
+    .sheet{width:100%;background:#111827;border:1px solid var(--line);border-radius:22px;padding:14px;max-height:86vh;overflow:auto;}
+    .sheet h2{font-size:18px;margin:0 0 10px;}
+    .hint{font-size:13px;color:var(--muted);line-height:1.55;}
+    .templateGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0;}
+    .templateGrid button{box-shadow:none;background:#020617;color:var(--text);border:1px solid var(--line);font-size:14px;}
+    @media (min-width:700px){body{max-width:680px;margin:auto}.modal{align-items:center}.sheet{max-width:680px;margin:auto}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>💡 アイデアメモ</h1>
+    <div class="topbar">
+      <input id="search" class="search" placeholder="検索：ことば・タグ" />
+      <button id="randomBtn" class="ghost">発想</button>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <section class="panel">
+    <textarea id="ideaInput" placeholder="思いついたことをすぐ書く\n例：タックシールの印刷前に、同じグループを2回出していないか警告する"></textarea>
+    <div class="row">
+      <select id="category">
+        <option>仕事</option><option>学校</option><option>AI</option><option>HTMLアプリ</option><option>改善</option><option>遊び</option><option>あとで</option>
+      </select>
+      <input id="tags" class="small" placeholder="タグ 例: 印刷,OCR" />
+    </div>
+    <div class="row">
+      <button id="saveBtn" class="ok" style="flex:1">保存</button>
+      <button id="clearBtn" class="ghost">クリア</button>
+    </div>
+    <div class="hint">保存先はこのiPhone内です。ネット不要。ホーム画面に追加するとアプリ風に使えます。</div>
+  </section>
+
+  <div class="stats" id="stats"></div>
+  <main id="list"></main>
+
+  <div class="modal" id="modal">
+    <div class="sheet">
+      <h2>発想のきっかけ</h2>
+      <div class="hint">下の型を押すと、メモ欄に質問が入ります。</div>
+      <div class="templateGrid" id="templateGrid"></div>
+      <div class="row">
+        <button class="ghost" id="exportBtn" style="flex:1">テキスト書き出し</button>
+        <button class="danger" id="closeModal">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  'use strict';
+  const KEY='iphone_idea_app_v1';
+  const $=id=>document.getElementById(id);
+  let ideas=load();
+  let currentFilter='すべて';
+  let editingId=null;
+
+  const templates=[
+    '今いちばん面倒な作業は何か？\nそれを1クリックにするなら？',
+    '担当者が間違えやすい場所はどこか？\n警告を出すなら何と言う？',
+    'Excelで毎回同じことをしている作業は？\nHTML化できる部分は？',
+    '紙で確認していることを、画面上で先に確認できないか？',
+    'もし小学生でも使えるようにするなら、何を隠すべきか？',
+    '失敗した時に、元に戻せる仕組みは必要か？',
+    '名前を付けるとしたら、誰に何を約束するアプリか？',
+    '今あるアプリに「重複チェック」を足すと便利なものは？'
+  ];
+
+  function load(){
+    try{return JSON.parse(localStorage.getItem(KEY)||'[]');}catch(e){return [];}
+  }
+  function save(){localStorage.setItem(KEY,JSON.stringify(ideas));}
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+  function formatDate(t){
+    const d=new Date(t);
+    return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  function allCats(){
+    const cats=['すべて','固定'];
+    ideas.forEach(i=>{if(!cats.includes(i.category))cats.push(i.category)});
+    return cats;
+  }
+  function renderChips(){
+    $('chips').innerHTML=allCats().map(c=>`<button class="chip ${c===currentFilter?'active':''}" data-filter="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join('');
+    document.querySelectorAll('[data-filter]').forEach(b=>b.onclick=()=>{currentFilter=b.dataset.filter;render();});
+  }
+  function filtered(){
+    const q=$('search').value.trim().toLowerCase();
+    return ideas.filter(i=>{
+      if(currentFilter==='固定' && !i.pinned)return false;
+      if(currentFilter!=='すべて' && currentFilter!=='固定' && i.category!==currentFilter)return false;
+      if(!q)return true;
+      return (i.text+' '+i.category+' '+(i.tags||'')).toLowerCase().includes(q);
+    }).sort((a,b)=>(b.pinned-a.pinned)||(b.updatedAt-a.updatedAt));
+  }
+  function render(){
+    renderChips();
+    const arr=filtered();
+    $('stats').textContent=`${arr.length}件表示 / 全${ideas.length}件`;
+    if(arr.length===0){$('list').innerHTML='<div class="empty">まだアイデアがありません。<br>思いついた瞬間に1行だけでも保存してください。</div>';return;}
+    $('list').innerHTML=arr.map(i=>`
+      <article class="idea ${i.pinned?'pinned':''}">
+        <div class="meta"><span>${i.pinned?'⭐ ':''}${escapeHtml(i.category)} <span class="tag">${escapeHtml(i.tags||'')}</span></span><span>${formatDate(i.updatedAt)}</span></div>
+        <div class="ideaText">${escapeHtml(i.text)}</div>
+        <div class="actions">
+          <button class="ghost" data-act="pin" data-id="${i.id}">${i.pinned?'固定解除':'固定'}</button>
+          <button class="ghost" data-act="edit" data-id="${i.id}">編集</button>
+          <button class="ok" data-act="judge" data-id="${i.id}">HTML化判定</button>
+          <button class="ghost" data-act="copy" data-id="${i.id}">コピー</button>
+          <button class="danger" data-act="del" data-id="${i.id}">削除</button>
+        </div>
+        ${i.judgement ? `<div class="judgeBox">${i.judgement}</div>` : ''}
+      </article>`).join('');
+    document.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>handleAction(b.dataset.act,b.dataset.id));
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+
+  function judgeIdea(idea){
+    const text=(idea.text+' '+(idea.tags||'')+' '+idea.category).toLowerCase();
+    let score=40;
+    const plus=[
+      ['excel',12],['エクセル',12],['csv',10],['xlsx',10],['pdf',8],['印刷',10],['チェック',10],['重複',12],['並べ替え',10],['集計',10],['計算',10],['検索',8],['分類',8],['変換',10],['入力',7],['保存',7],['ocr',6],['一覧',7],['警告',8],['コピペ',6],['テンプレート',6],['タイムカード',8],['タックシール',10]
+    ];
+    const minus=[
+      ['aiで完全自動',-12],['写真だけで',-8],['音声だけで',-6],['インターネット必須',-8],['ログイン',-6],['決済',-10],['複数人で同時',-8],['高精度ocr',-10],['カメラ映像',-6],['地図',-6]
+    ];
+    plus.forEach(([w,n])=>{if(text.includes(w))score+=n;});
+    minus.forEach(([w,n])=>{if(text.includes(w))score+=n;});
+    if(idea.text.length>40)score+=6;
+    if(idea.text.length>120)score+=6;
+    score=Math.max(5,Math.min(98,score));
+
+    let level, advice, next;
+    if(score>=78){
+      level='かなりHTML化向き';
+      advice='入力・確認・出力の流れに分けやすいので、1ファイルHTMLで試作品を作りやすいです。';
+      next='次は「入力項目」「結果表示」「保存や印刷が必要か」を決めるとすぐ形にできます。';
+    }else if(score>=58){
+      level='工夫すればHTML化できそう';
+      advice='一部に難しい処理がありそうですが、手入力や確認画面を組み合わせれば実用化できる可能性があります。';
+      next='まず完全自動を狙わず、担当者が修正できる試作品にすると成功しやすいです。';
+    }else{
+      level='HTMLだけでは少し難しい';
+      advice='カメラ・AI・外部データ・高精度判定が中心だと、HTML単体では限界があります。';
+      next='それでも「入力補助」「チェックリスト」「手動確認ツール」として小さく作る道はあります。';
+    }
+    const type = guessType(text);
+    return `<div><strong>判定：</strong><span class="score">${score}点</span>　${level}</div><div><strong>理由：</strong>${advice}</div><div><strong>作るなら：</strong>${type}</div><div><strong>次の一手：</strong>${next}</div>`;
+  }
+  function guessType(text){
+    if(text.includes('印刷')||text.includes('pdf')||text.includes('タックシール'))return '印刷前チェック＋PDF/印刷用レイアウト型';
+    if(text.includes('excel')||text.includes('エクセル')||text.includes('csv')||text.includes('xlsx'))return 'Excel読込＋自動集計・変換型';
+    if(text.includes('重複')||text.includes('チェック')||text.includes('警告'))return 'ミス防止チェック型';
+    if(text.includes('計算')||text.includes('集計'))return '計算・集計ツール型';
+    if(text.includes('検索')||text.includes('分類'))return '検索・分類データベース型';
+    return 'メモ入力＋整理＋判定型';
+  }
+  function handleAction(act,id){
+    const i=ideas.find(x=>x.id===id); if(!i)return;
+    if(act==='pin'){i.pinned=!i.pinned;i.updatedAt=Date.now();save();render();}
+    if(act==='edit'){
+      editingId=id;$('ideaInput').value=i.text;$('category').value=i.category;$('tags').value=i.tags||'';$('saveBtn').textContent='更新';window.scrollTo({top:0,behavior:'smooth'});
+    }
+    if(act==='judge'){
+      i.judgement=judgeIdea(i);
+      i.updatedAt=Date.now();
+      save();render();toast('判定しました');
+    }
+    if(act==='copy'){
+      navigator.clipboard?.writeText(i.text).then(()=>toast('コピーしました'));
+    }
+    if(act==='del'){
+      if(confirm('このアイデアを削除しますか？')){ideas=ideas.filter(x=>x.id!==id);save();render();}
+    }
+  }
+  function addOrUpdate(){
+    const text=$('ideaInput').value.trim();
+    if(!text){toast('内容を入力してください');return;}
+    const now=Date.now();
+    if(editingId){
+      const i=ideas.find(x=>x.id===editingId);
+      if(i){i.text=text;i.category=$('category').value;i.tags=$('tags').value.trim();i.updatedAt=now;}
+      editingId=null;$('saveBtn').textContent='保存';
+    }else{
+      ideas.push({id:uid(),text,category:$('category').value,tags:$('tags').value.trim(),pinned:false,createdAt:now,updatedAt:now});
+    }
+    save();$('ideaInput').value='';$('tags').value='';render();toast('保存しました');
+  }
+  function toast(msg){
+    const el=document.createElement('div');el.textContent=msg;
+    Object.assign(el.style,{position:'fixed',left:'50%',bottom:'28px',transform:'translateX(-50%)',background:'#e5e7eb',color:'#111827',padding:'10px 14px',borderRadius:'999px',fontWeight:'700',zIndex:99});
+    document.body.appendChild(el);setTimeout(()=>el.remove(),1300);
+  }
+  function openModal(){
+    $('templateGrid').innerHTML=templates.map((t,idx)=>`<button data-t="${idx}">${escapeHtml(t.split('\n')[0])}</button>`).join('');
+    document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{$('ideaInput').value=templates[+b.dataset.t];$('modal').classList.remove('show');window.scrollTo({top:0,behavior:'smooth'});});
+    $('modal').classList.add('show');
+  }
+  function exportText(){
+    const text=ideas.sort((a,b)=>b.updatedAt-a.updatedAt).map(i=>`【${i.category}】${i.tags?' #'+i.tags:''}\n${i.text}\n${i.judgement?'HTML化判定あり\n':''}${formatDate(i.updatedAt)}\n`).join('\n---\n');
+    const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='ideas.txt';a.click();URL.revokeObjectURL(url);
+  }
+
+  $('saveBtn').onclick=addOrUpdate;
+  $('clearBtn').onclick=()=>{editingId=null;$('ideaInput').value='';$('tags').value='';$('saveBtn').textContent='保存';};
+  $('search').oninput=render;
+  $('randomBtn').onclick=openModal;
+  $('closeModal').onclick=()=>$('modal').classList.remove('show');
+  $('exportBtn').onclick=exportText;
+  render();
+})();
+</script>
+</body>
+</html>
