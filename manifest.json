@@ -2,7 +2,7 @@
   "name": "アイデアメモ",
   "short_name": "アイデア",
   "description": "アイデアを保存し、HTML化できるか判定するiPhone用メモアプリ",
-  "start_url": "./idea_app_iphone_github.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
