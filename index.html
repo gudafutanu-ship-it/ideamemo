@@ -249,6 +249,7 @@
           <button class="ghost" data-act="pin" data-id="${i.id}">${i.pinned?'固定解除':'固定'}</button>
           <button class="ghost" data-act="edit" data-id="${i.id}">編集</button>
           <button class="ok" data-act="judge" data-id="${i.id}">HTML化判定</button>
+          <button class="warn" data-act="askgpt" data-id="${i.id}">ChatGPTに聞く</button>
           <button class="ghost" data-act="copy" data-id="${i.id}">コピー</button>
           <button class="danger" data-act="del" data-id="${i.id}">削除</button>
         </div>
@@ -298,6 +299,46 @@
     if(text.includes('検索')||text.includes('分類'))return '検索・分類データベース型';
     return 'メモ入力＋整理＋判定型';
   }
+  function htmlToText(html){
+    const div=document.createElement('div');
+    div.innerHTML=html || '';
+    return div.textContent.replace(/\s+/g,' ').trim();
+  }
+  function buildChatGPTPrompt(idea){
+    const judgementText = idea.judgement
+      ? htmlToText(idea.judgement).replace('判定：','【HTML化判定】\n判定：').replace('理由：','\n理由：').replace('作るなら：','\n作るなら：').replace('次の一手：','\n次の一手：')
+      : '【HTML化判定】\nまだ判定していません。必要なら、このアイデアのHTML化しやすさも判定してください。';
+    return `次のアイデアを、iPhoneで使えるHTMLアプリにできるか相談したいです。
+
+【アイデア】
+${idea.text}
+
+【カテゴリ】
+${idea.category}
+
+【タグ】
+${idea.tags || 'なし'}
+
+${judgementText}
+
+知りたいこと：
+1. HTMLだけで作れるか
+2. 難しい部分はどこか
+3. まず作るべき試作品の機能
+4. ChatGPTに依頼するときの仕様書
+
+できれば、初心者にも分かる言葉でお願いします。`;
+  }
+  function askChatGPT(idea){
+    const prompt=buildChatGPTPrompt(idea);
+    try{
+      navigator.clipboard?.writeText(prompt);
+    }catch(e){}
+    const url='https://chat.openai.com/?q='+encodeURIComponent(prompt);
+    window.open(url,'_blank');
+    toast('質問文をコピーしてChatGPTを開きます');
+  }
+
   function handleAction(act,id){
     const i=ideas.find(x=>x.id===id); if(!i)return;
     if(act==='pin'){i.pinned=!i.pinned;i.updatedAt=Date.now();save();render();}
@@ -308,6 +349,9 @@
       i.judgement=judgeIdea(i);
       i.updatedAt=Date.now();
       save();render();toast('判定しました');
+    }
+    if(act==='askgpt'){
+      askChatGPT(i);
     }
     if(act==='copy'){
       navigator.clipboard?.writeText(i.text).then(()=>toast('コピーしました'));
